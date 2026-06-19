@@ -1,30 +1,44 @@
-# 💰 DevOps Expense Tracker
+# 💸 DevOps Expense Tracker
 
-A production-style **Node.js REST API** demonstrating a complete end-to-end DevOps workflow — from local development to containerized Kubernetes deployment with full monitoring.
+[![CI Pipeline](https://github.com/manojkumar-021/devops-expense-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/manojkumar-021/devops-expense-tracker/actions)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Minikube-326CE5?logo=kubernetes&logoColor=white)](https://minikube.sigs.k8s.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Goal**: Showcase the full DevOps lifecycle: Code → Containerize → Deploy → Monitor → Alert
+A production-style **end-to-end DevOps project** demonstrating a complete software delivery lifecycle — from application development to containerization, Kubernetes deployment, CI/CD automation, and real-time monitoring with Prometheus and Grafana.
 
 ---
 
 ## 🏗️ Architecture Overview
 
 ```
-Developer
-    │
-    ▼
-GitHub (source control)
-    │
-    ├──► GitHub Actions ──► Docker Build ──► Docker Hub
-    │
-    └──► Jenkins Pipeline ──► Kubernetes (Minikube)
-                                    │
-                              ┌─────┴──────┐
-                              │  Pods (×3) │
-                              └─────┬──────┘
-                                    │
-                              Prometheus (metrics)
-                                    │
-                              Grafana (dashboards)
+Developer Push
+      │
+      ▼
+ GitHub Repo
+      │
+      ▼
+ Jenkins CI ──────────────────────────────────────┐
+      │                                            │
+   Build & Test                            GitHub Actions
+      │                                    (lint + test)
+      ▼
+ Docker Build
+      │
+      ▼
+ Docker Image
+      │
+      ▼
+ Kubernetes (Minikube)
+  ┌───────────────────────┐
+  │  deployment.yaml      │
+  │  3 Replicas (pods)    │
+  │  NodePort Service     │
+  └───────────┬───────────┘
+              │
+              ▼
+    Prometheus ──► Grafana Dashboard
+    (metrics scrape)  (visualization)
 ```
 
 ---
@@ -33,24 +47,62 @@ GitHub (source control)
 
 | Layer | Technology |
 |---|---|
-| Application | Node.js, Express |
+| Application | Node.js + Express |
 | Containerization | Docker |
 | Orchestration | Kubernetes (Minikube) |
 | Package Management | Helm |
-| CI/CD | GitHub Actions + Jenkins |
+| CI Pipeline | Jenkins + GitHub Actions |
 | Monitoring | Prometheus + Grafana |
-| Source Control | Git, GitHub |
 
 ---
 
 ## ✨ Features
 
-- **REST API** — Add and retrieve expense records via HTTP endpoints
-- **Dockerized** — Fully containerized for consistent environments
-- **Kubernetes Deployment** — Multi-replica deployment with service exposure
-- **CI/CD Pipeline** — Automated build and deployment via GitHub Actions + Jenkins
-- **Monitoring Stack** — Prometheus scrapes metrics; Grafana visualizes them in real time
-- **Helm Charts** — Monitoring stack installed via `kube-prometheus-stack`
+- REST API to **add and retrieve expenses** (`POST /expenses`, `GET /expenses`)
+- **Dockerized** with multi-stage build for a lean image
+- Deployed on **Kubernetes** with 3 replicas for high availability
+- **Jenkins pipeline** with stages: Build → Test → Docker Build → Deploy
+- **GitHub Actions** workflow for automated CI on every push
+- **Prometheus** scrapes live application metrics
+- **Grafana** dashboards for real-time visualization
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Docker
+- Minikube
+- kubectl
+- Helm
+
+### 1. Clone the repo
+```bash
+git clone https://github.com/manojkumar-021/devops-expense-tracker.git
+cd devops-expense-tracker
+```
+
+### 2. Run with Docker
+```bash
+docker build -t expense-app .
+docker run -p 3000:3000 expense-app
+```
+
+### 3. Deploy to Kubernetes
+```bash
+minikube start
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+kubectl get pods   # verify pods are running
+```
+
+### 4. Set up Monitoring
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install monitoring prometheus-community/kube-prometheus-stack
+kubectl port-forward svc/monitoring-grafana 4000:80
+# Open http://localhost:4000 (admin / prom-operator)
+```
 
 ---
 
@@ -60,127 +112,47 @@ GitHub (source control)
 devops-expense-tracker/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml          # GitHub Actions pipeline
+│       └── ci.yml          # GitHub Actions CI pipeline
 ├── Dockerfile              # Container image definition
 ├── Jenkinsfile             # Jenkins pipeline stages
-├── deployment.yaml         # Kubernetes Deployment manifest
-├── service.yaml            # Kubernetes Service manifest
-├── app.js                  # Express API (main application)
+├── deployment.yaml         # Kubernetes Deployment (3 replicas)
+├── service.yaml            # Kubernetes NodePort Service
+├── app.js                  # Express REST API
 ├── package.json
 └── README.md
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🔁 CI/CD Pipeline (Jenkins)
 
-### Prerequisites
-- Docker installed
-- Minikube + kubectl installed
-- Node.js 18+
-
-### Run Locally with Docker
-
-```bash
-# Clone the repo
-git clone https://github.com/manojkumar-021/devops-expense-tracker.git
-cd devops-expense-tracker
-
-# Build Docker image
-docker build -t expense-app .
-
-# Run container
-docker run -p 3000:3000 expense-app
 ```
-
-API available at: `http://localhost:3000`
-
-### Deploy on Kubernetes
-
-```bash
-# Start Minikube
-minikube start
-
-# Apply manifests
-kubectl apply -f deployment.yaml
-kubectl apply -f service.yaml
-
-# Verify pods are running
-kubectl get pods
-
-# Access the service
-minikube service expense-service
+Stage 1: Checkout   → Clone repo from GitHub
+Stage 2: Install    → npm install
+Stage 3: Test       → npm test
+Stage 4: Docker     → Build & tag image
+Stage 5: Deploy     → kubectl apply to Minikube
 ```
-
----
-
-## 📊 Monitoring Setup
-
-```bash
-# Add Prometheus Helm repo
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-
-# Install monitoring stack
-helm install monitoring prometheus-community/kube-prometheus-stack
-
-# Access Grafana dashboard
-kubectl port-forward svc/monitoring-grafana 4000:80
-```
-
-Open Grafana at: `http://localhost:4000`
-Default login: `admin / prom-operator`
-
----
-
-## 🔁 CI/CD Pipeline
-
-**GitHub Actions** (`.github/workflows/ci.yml`):
-1. Triggered on every push to `main`
-2. Runs lint and build checks
-3. Builds Docker image
-4. Pushes to Docker Hub
-
-**Jenkins** (`Jenkinsfile`):
-1. Pulls latest image
-2. Deploys to Kubernetes cluster
-3. Verifies pod health
-
----
-
-## 📡 API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/` | Health check |
-| `GET` | `/expenses` | List all expenses |
-| `POST` | `/expenses` | Add a new expense |
-
-**Example Request:**
-```bash
-curl -X POST http://localhost:3000/expenses \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Cloud Credits", "amount": 500}'
-```
-
----
-
-## 🔑 Key Learnings
-
-- Containerizing Node.js apps and managing multi-stage Docker builds
-- Writing Kubernetes manifests for Deployments, Services, and ConfigMaps
-- Setting up a full CI/CD pipeline from commit to production
-- Installing and configuring Prometheus + Grafana using Helm
-- Debugging pod crashes, image pull errors, and service connectivity issues in Kubernetes
 
 ---
 
 ## 🔭 Upcoming Enhancements
 
-- [ ] Add MongoDB for persistent storage (with Kubernetes PersistentVolume)
-- [ ] Add Terraform scripts to provision AWS EKS cluster
-- [ ] Set up Grafana alerting rules and Slack notifications
-- [ ] Add a simple React frontend
+- [ ] Add MongoDB for persistent expense storage
+- [ ] Build a React frontend dashboard
+- [ ] Push Docker image to DockerHub via pipeline
+- [ ] Add ArgoCD for GitOps-based deployment
+- [ ] Implement Horizontal Pod Autoscaler (HPA)
+
+---
+
+## 💡 Key Learnings
+
+- Containerization with Docker and multi-stage builds
+- Kubernetes deployment, scaling, and service exposure
+- Helm chart installation for complex monitoring stacks
+- Building end-to-end CI/CD with Jenkins declarative pipelines
+- Prometheus metrics scraping and Grafana dashboard creation
 
 ---
 
