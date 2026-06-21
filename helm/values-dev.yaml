@@ -1,0 +1,47 @@
+# Development values for Helm deployment
+
+replicaCount: 1
+
+image:
+  repository: expense-app
+  pullPolicy: Always  # Always pull in dev
+  tag: "latest"
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 3000
+  nodePort: 30000
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 2
+
+env:
+  NODE_ENV: development
+  LOG_LEVEL: debug
